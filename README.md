@@ -1,4 +1,4 @@
-# PIN Code Map
+# India PinCodes to Hex Codes
 
 A simple data visualization that maps (pun intended) [Postal Index Number](https://en.wikipedia.org/wiki/Postal_Index_Number) (PIN) Codes of India to [Hex Triplet](https://en.wikipedia.org/wiki/Web_colors#Hex_triplet) colours, resulting in a colourful geographic representation of the Indian Postal Code System.
 
@@ -6,9 +6,7 @@ A simple data visualization that maps (pun intended) [Postal Index Number](https
 
 This project converts each 6-digit PIN Code into a hexadecimal colour code and displays the corresponding postal areas on an interactive map. Each geographical region of a PIN is filled with the corresponding hexadecimal colour, creating a vibrant mosaic representing Indian postal geography.
 
-Each 6-digit PIN (for example, `560001`) becomes a hexadecimal colour code (`#560001`)
-
-
+Each 6-digit PIN (for example, `560001`) becomes a hexadecimal colour code (`#560001`). For more, read my [LinkedIn](https://www.linkedin.com/posts/hfactor_pincode-activity-7334068205042245633-YmFT), [Substack Post](https://hiran.substack.com/p/pin-codes-to-web-colors).
 
 ## Installation
 
