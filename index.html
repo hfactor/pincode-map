@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>India by Pincode Colors</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Georgia', serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            font-weight: normal;
+        }
+        
+        .description {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            text-align: justify;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        #map {
+            height: 800px;
+            width: 100%;
+            border: 2px solid #34495e;
+            margin: 20px 0;
+            background-color: white;
+        }
+        
+        .credits {
+            text-align: center;
+            font-size: 0.8em;
+            color: #7f8c8d;
+            margin-top: 20px;
+            line-height: 1.4;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        @media print {
+            body { background-color: white; }
+            .container { max-width: none; }
+            #map { height: 600px; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>India by Pincode Colors</h1>
+    
+        <div class="loading" id="loading">Loading India's pincode colors...</div>
+        <div id="map" style="display: none;"></div>
+        
+        <div class="credits">
+            Data Source: India Post Pincode Boundaries from <a href=https://www.data.gov.in/resource/delivery-post-office-pincode-boundary">data.gov.in</a><br>
+            Visualization Concept: Pincode to Hexadecimal Color Mapping<br>
+            Created by <a href="https://hiran.in">Hiran Venugopalan</a>, Thanks : <a href="https://kerala.openstreetmap.in/maintainers/">OSM Kerala Team</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        let map;
+        
+        async function loadAndDisplayMap() {
+            try {
+                // Load the geojson file
+                const response = await fetch('data.geojson');
+                if (!response.ok) {
+                    throw new Error(`Failed to load data file: ${response.status}`);
+                }
+                
+                const geojsonText = await response.text();
+                console.log('File loaded, length:', geojsonText.length);
+                
+                // Try to parse as complete geojson first
+                let geojsonData;
+                try {
+                    geojsonData = JSON.parse(geojsonText);
+                    console.log('Parsed as complete geojson');
+                } catch (e) {
+                    // If that fails, try parsing as individual features per line
+                    console.log('Parsing as individual features per line');
+                    const features = [];
+                    const lines = geojsonText.trim().split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.trim()) {
+                            try {
+                                const feature = JSON.parse(line.trim());
+                                if (feature.type === 'Feature' && feature.properties && feature.properties.Pincode) {
+                                    features.push(feature);
+                                }
+                            } catch (parseError) {
+                                console.warn('Could not parse line:', line.substring(0, 50) + '...');
+                            }
+                        }
+                    }
+                    
+                    geojsonData = {
+                        type: 'FeatureCollection',
+                        features: features
+                    };
+                }
+                
+                console.log(`Loaded ${geojsonData.features.length} pincode areas`);
+                
+                if (geojsonData.features.length === 0) {
+                    throw new Error('No pincode features found in the data');
+                }
+                
+                // Initialize the map
+                map = L.map('map').setView([22.5937, 78.9629], 5); // Center on India
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18
+}).addTo(map);
+
+                
+                // Add the geojson layer with color styling
+                const pincodeLayer = L.geoJSON(geojsonData, {
+                    style: function(feature) {
+                        const pincode = feature.properties.Pincode;
+                        const hexColor = `#${pincode}`;
+                        
+                        return {
+                            fillColor: hexColor,
+                            fillOpacity: 1.0,
+                            color: hexColor,         
+                            weight: 0.15,            
+                            opacity: 0.3
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const pincode = feature.properties.Pincode;
+                        const hexColor = `#${pincode}`;
+                        const officeName = feature.properties.Office_Name || 'Unknown';
+                        layer.bindTooltip(`${officeName}<br>Pincode: ${pincode}<br>Color: ${hexColor}`, {
+                            permanent: false,
+                            direction: 'auto'
+                        });
+                    }
+                });
+                
+                pincodeLayer.addTo(map);
+                
+                // Fit map to bounds
+                const bounds = pincodeLayer.getBounds();
+                map.setView([22.5937, 78.9629], 4);  // Good zoom level to see full India
+
+                
+                // Hide loading and show map
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('map').style.display = 'block';
+                console.log(feature.geometry.coordinates);
+                console.log('Map loaded successfully!');
+                
+            } catch (error) {
+                console.error('Error loading map:', error);
+                document.getElementById('loading').innerHTML = `Error loading map: ${error.message}`;
+            }
+        }
+        
+        // Load the map when page is ready
+        window.addEventListener('load', loadAndDisplayMap);
+    </script>
+</body>
+</html>
